@@ -435,7 +435,29 @@ if(emb&&emb.po)storedPO=emb.po;
 else{try{const s=localStorage.getItem('po');if(s)storedPO=JSON.parse(s);}catch(e){}}
 if(storedPO&&storedPO.length){PO=storedPO;Object.keys(PM).forEach(k=>{if(!PO.includes(k))PO.push(k);});}
 else PO=Object.keys(PM);}
-function saveData(){try{localStorage.setItem('pm',JSON.stringify(PM));localStorage.setItem('evs',JSON.stringify(evs));localStorage.setItem('po',JSON.stringify(PO));}catch(e){}}
+function saveData(){try{localStorage.setItem('pm',JSON.stringify(PM));localStorage.setItem('evs',JSON.stringify(evs));localStorage.setItem('po',JSON.stringify(PO));}catch(e){}_queueSync();}
+
+// Auto-sync debounce: wait 3s after last change, then push to GitHub
+var _syncTimer=null,_syncDirty=false,_syncReady=false;
+function _queueSync(){if(!isGHReady()||!_syncReady)return;_syncDirty=true;if(_syncTimer)clearTimeout(_syncTimer);_syncTimer=setTimeout(_autoSync,3000);_updateSyncIndicator('pending');}
+async function _autoSync(){if(!_syncDirty||_ghSyncing||!_syncReady)return;
+_updateSyncIndicator('syncing');_ghSyncing=true;
+try{var cfg=getGHCfg();if(!cfg||!cfg.token){_updateSyncIndicator('error');return;}
+// Get current sha if missing
+if(!_ghSha){try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}}catch(e){}}
+var content=_buildHTML();var b64=btoa(unescape(encodeURIComponent(content)));
+var body={message:'Auto-save '+new Date().toLocaleString(),content:b64};if(_ghSha)body.sha=_ghSha;
+var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{method:'PUT',headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+if(r.ok||r.status===201){var d=await r.json();_ghSha=d.content.sha;_syncDirty=false;_updateSyncIndicator('done');}
+else if(r.status===409){_ghSha=null;setTimeout(_autoSync,2000);}
+else{_syncDirty=false;_updateSyncIndicator('error');}}
+catch(e){console.error('autoSync error:',e);_updateSyncIndicator('error');}
+finally{_ghSyncing=false;}}
+function _updateSyncIndicator(state){var dot=document.getElementById('ghDot');var label=document.getElementById('ghLabel');if(!dot||!label)return;
+if(state==='pending'){dot.className='gh-dot on';dot.style.background='#f59e0b';label.textContent='Unsaved';}
+else if(state==='syncing'){dot.className='gh-dot on';dot.style.background='#3b82f6';label.textContent='Syncing...';}
+else if(state==='done'){dot.className='gh-dot on';dot.style.background='#22c55e';label.textContent='Synced';setTimeout(function(){if(label.textContent==='Synced')label.textContent='Cloud';},2000);}
+else if(state==='error'){dot.className='gh-dot on';dot.style.background='#ef4444';label.textContent='Error';}}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v!==null?v:d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 
@@ -863,7 +885,7 @@ function isGHReady(){var c=getGHCfg();return c&&c.token&&c.owner&&c.repo&&c.path
 function openGHSettings(){var c=getGHCfg()||{};document.getElementById('ghToken').value=c.token||'';document.getElementById('ghOwner').value=c.owner||'';document.getElementById('ghRepo').value=c.repo||'';document.getElementById('ghPath').value=c.path||'index.html';updateGHStatus();document.getElementById('ghM').classList.add('on');}
 function saveGHSettings(){var cfg={token:document.getElementById('ghToken').value.trim(),owner:document.getElementById('ghOwner').value.trim(),repo:document.getElementById('ghRepo').value.trim(),path:document.getElementById('ghPath').value.trim()||'index.html'};try{localStorage.setItem('ghCfg',JSON.stringify(cfg));}catch(e){}updateGHBtn();updateGHStatus();showMsg('✅ GitHub settings saved');}
 function clearGHSettings(){try{localStorage.removeItem('ghCfg');}catch(e){}document.getElementById('ghToken').value='';document.getElementById('ghOwner').value='';document.getElementById('ghRepo').value='';_ghSha=null;updateGHBtn();updateGHStatus();showMsg('🗑 GitHub settings cleared');}
-function updateGHBtn(){var dot=document.getElementById('ghDot');var label=document.getElementById('ghLabel');var saveBtn=document.getElementById('ghSaveBtn');if(isGHReady()){dot.classList.add('on');label.textContent='Synced';if(saveBtn)saveBtn.style.display='';}else{dot.classList.remove('on');label.textContent='Offline';if(saveBtn)saveBtn.style.display='none';}}
+function updateGHBtn(){var dot=document.getElementById('ghDot');var label=document.getElementById('ghLabel');var saveBtn=document.getElementById('ghSaveBtn');if(isGHReady()){dot.classList.add('on');dot.style.background='#22c55e';label.textContent='Cloud';if(saveBtn)saveBtn.style.display='';}else{dot.classList.remove('on');dot.style.background='';label.textContent='Offline';if(saveBtn)saveBtn.style.display='none';}}
 function updateGHStatus(){var el=document.getElementById('ghStatus');if(!el)return;if(isGHReady()){el.textContent='✅ Connected — '+getGHCfg().owner+'/'+getGHCfg().repo;el.style.background='rgba(22,163,74,.1)';el.style.color='#16a34a';}else{el.textContent='⚪ Not configured';el.style.background='var(--bg2)';el.style.color='var(--sub)';}}
 async function ghTestConnection(){var cfg=getGHCfg();if(!cfg||!cfg.token){showMsg('⚠️ Enter settings first');return;}
 updateGHStatus();var el=document.getElementById('ghStatus');el.textContent='🔄 Testing...';el.style.background='rgba(99,102,241,.1)';el.style.color='var(--pri)';
@@ -942,8 +964,8 @@ if(emb&&emb.todos){todos=emb.todos;}else{try{var s=localStorage.getItem('todos')
 todos=todos.filter(function(t){return t&&t.id&&t.date&&/^\d{4}-\d{2}-\d{2}$/.test(t.date);});
 todos.forEach(function(t){if(t.status==='defer'||t.status==='postpone')t.status='ongoing';if(!TODO_ST[t.status])t.status='todo';});
 if(emb&&emb.memos){todoMemos=emb.memos;}else{try{var s2=localStorage.getItem('todoMemos');if(s2)todoMemos=JSON.parse(s2);}catch(e2){todoMemos={};}}}
-function saveTodos(){try{localStorage.setItem('todos',JSON.stringify(todos));}catch(e){}}
-function saveMemo(dt,txt){todoMemos[dt]=txt;try{localStorage.setItem('todoMemos',JSON.stringify(todoMemos));}catch(e){}}
+function saveTodos(){try{localStorage.setItem('todos',JSON.stringify(todos));}catch(e){}_queueSync();}
+function saveMemo(dt,txt){todoMemos[dt]=txt;try{localStorage.setItem('todoMemos',JSON.stringify(todoMemos));}catch(e){}_queueSync();}
 
 function isDayOff(ds){var d=parseD(ds),dw=d.getUTCDay();return dw===0||dw===6||HOL.has(ds);}
 function nextBizDay(ds){var d=parseD(ds);do{d.setUTCDate(d.getUTCDate()+1);}while(isDayOff(fmtD(d)));return fmtD(d);}
@@ -1356,8 +1378,8 @@ else document.getElementById('stSec').classList.remove('collapsed');
 updateGHBtn();
 // Try GitHub pull
 if(isGHReady()){
-try{var pulled=await ghPull();if(pulled){cFS=new Set(Object.keys(PM));rAll();showMsg('☁️ GitHub에서 데이터 로드 완료');return;}}catch(e){console.error('ghPull init error:',e);}}
-rAll();});
+try{var pulled=await ghPull();if(pulled){cFS=new Set(Object.keys(PM));_syncReady=true;rAll();showMsg('☁️ GitHub에서 데이터 로드 완료');return;}}catch(e){console.error('ghPull init error:',e);}}
+_syncReady=true;rAll();});
 </script><div class="toast" id="toast"></div>
 <div class="sp-overlay" id="spOvl" onclick="closeSP()"></div><div class="side-panel" id="sideP"></div>
 </body></html>

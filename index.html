@@ -1379,7 +1379,7 @@ updateGHBtn();
 if(isGHReady()){
 try{var pulled=await ghPull();if(pulled){cFS=new Set(Object.keys(PM));_syncReady=true;rAll();showMsg('☁️ GitHub에서 데이터 로드 완료');return;}}catch(e){console.error('ghPull init error:',e);}}
 _syncReady=true;rAll();});
-</script><div class="toast" id="toast"></div>
+</script><div class="toast" id="toast">☁️ GitHub에서 데이터 로드 완료</div>
 <div class="sp-overlay" id="spOvl" onclick="closeSP()"></div><div class="side-panel" id="sideP"></div>
 
 </body><whale-quicksearch translate="no" style="visibility: visible;"></whale-quicksearch></html>

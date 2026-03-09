@@ -393,7 +393,15 @@ const DEF_EVS=[
 
 let PM,evs,PO;
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function _getEmbedded(){try{var el=document.getElementById('app-data');if(el){var d=JSON.parse(el.textContent);return d;}}catch(e){}return null;}
+function _getEmbedded(){try{
+// Try base64 comment format first
+var html=document.documentElement.outerHTML;
+var m=html.match(/<!--APP_DATA:([\w+/=]+)-->/);
+if(m){var json=decodeURIComponent(escape(atob(m[1])));return JSON.parse(json);}
+// Fallback: old script tag format
+var el=document.getElementById('app-data');
+if(el){return JSON.parse(el.textContent);}
+}catch(e){console.error('_getEmbedded error:',e);}return null;}
 function loadData(){
 var emb=_getEmbedded();
 // 1) Load PM
@@ -831,13 +839,14 @@ document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function doWiki(){try{let o='# Project Schedule\n\n';Object.entries(PM).forEach(([k,m])=>{const ev=evs.filter(e=>e.p===k).sort((a,b)=>a.start.localeCompare(b.start));if(!ev.length)return;o+=`### ${esc(m.label)}\n`;ev.forEach(e=>{o+=`- ${e.milestone?'⭐ ':''}${pIcSp(e.phase)}${esc(e.phase)}: ${e.start}${e.start!==e.end?' ~ '+e.end:''} (${bdc(e.start,e.end)}BD) ${({completed:'✅','in-progress':'🔄',upcoming:'⏳'})[e.status]||''}\n`;});o+='\n';});o+=`---\nUpdated: ${new Date().toLocaleString('en-US')}\n`;document.getElementById('expO').textContent=o;document.getElementById('expM').classList.add('on');}catch(e){console.error(e);}}
 function _serializeData(){return JSON.stringify({pm:PM,evs:evs,po:PO,todos:todos,memos:todoMemos});}
 function _injectData(html){
-var dataJSON=_serializeData().replace(/</g,'\\u003c').replace(/>/g,'\\u003e');
-var tag='<script type="application/json" id="app-data">'+dataJSON+'<\\/script>';
-// Remove old embedded data if present
+var json=_serializeData();
+var b64=btoa(unescape(encodeURIComponent(json)));
+var tag='<!--APP_DATA:'+b64+'-->';
+// Remove old formats
+html=html.replace(/<!--APP_DATA:[\w+/=]+-->/g,'');
 html=html.replace(/<script type="application\/json" id="app-data">[\s\S]*?<\/script>/g,'');
-// Also remove old localStorage inject scripts
 html=html.replace(/<script>try\{localStorage\.setItem[\s\S]*?<\/script>/g,'');
-return html.replace('</head>',tag+'</head>');}
+return html.replace('</head>',tag+'\n</head>');}
 
 function downloadHTML(){
 var html='<!DOCTYPE html>'+document.documentElement.outerHTML;
@@ -895,18 +904,16 @@ try{var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/c
 if(!r.ok)return false;
 var d=await r.json();_ghSha=d.sha;
 var raw=decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));
-// Parse embedded JSON from <script type="application/json" id="app-data">
-var m=raw.match(/<script type="application\/json" id="app-data">([\s\S]*?)<\/script>/);
-if(m){try{var data=JSON.parse(m[1].replace(/\\u003c/g,'<').replace(/\\u003e/g,'>'));
-if(data.pm&&Object.keys(data.pm).length){PM=data.pm;localStorage.setItem('pm',JSON.stringify(PM));}
-if(data.evs&&data.evs.length){evs=data.evs;localStorage.setItem('evs',JSON.stringify(evs));}
-if(data.po&&data.po.length){PO=data.po;localStorage.setItem('po',JSON.stringify(PO));}
-if(data.todos){todos=data.todos;localStorage.setItem('todos',JSON.stringify(todos));}
-if(data.memos){todoMemos=data.memos;localStorage.setItem('todoMemos',JSON.stringify(todoMemos));}
+// Parse base64 comment format
+var m=raw.match(/<!--APP_DATA:([\w+\/=]+)-->/);
+if(m){try{var json=decodeURIComponent(escape(atob(m[1])));
+var data=JSON.parse(json);
+if(data.pm&&Object.keys(data.pm).length){PM=data.pm;try{localStorage.setItem('pm',JSON.stringify(PM));}catch(e){}}
+if(data.evs&&data.evs.length){evs=data.evs;try{localStorage.setItem('evs',JSON.stringify(evs));}catch(e){}}
+if(data.po&&data.po.length){PO=data.po;try{localStorage.setItem('po',JSON.stringify(PO));}catch(e){}}
+if(data.todos){todos=data.todos;try{localStorage.setItem('todos',JSON.stringify(todos));}catch(e){}}
+if(data.memos){todoMemos=data.memos;try{localStorage.setItem('todoMemos',JSON.stringify(todoMemos));}catch(e){}}
 return true;}catch(e){console.error('ghPull parse error:',e);}}
-// Fallback: try old localStorage inject format
-var pmMatch=raw.match(/localStorage\.setItem\(['"]pm['"],\s*['"](.+?)['"]\)/);
-if(pmMatch){try{PM=JSON.parse(pmMatch[1].replace(/\\u003c/g,'<').replace(/\\"/g,'"'));localStorage.setItem('pm',JSON.stringify(PM));return true;}catch(e){}}
 return false;}catch(e){console.error('ghPull error:',e);return false;}}
 function closeM(id){document.getElementById(id).classList.remove('on');}
 

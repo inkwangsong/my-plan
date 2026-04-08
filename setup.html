@@ -1,0 +1,13 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Updating config...</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0f0ff;}.box{text-align:center;padding:2rem;background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);}h2{color:#6366f1;}</style>
+</head><body>
+<div class="box"><h2>&#x2699;&#xFE0F; Updating sync path...</h2><p id="m">data.json&#xC73C;&#xB85C; &#xBCC0;&#xACBD; &#xC911;...</p></div>
+<script>
+try{
+  var cfg=JSON.parse(localStorage.getItem('ghCfg')||'{}');
+  cfg.path='data.json';
+  localStorage.setItem('ghCfg',JSON.stringify(cfg));
+  document.getElementById('m').innerHTML='&#x2705; &#xC644;&#xB8CC;! &#xC774;&#xB3D9; &#xC911;...';
+}catch(e){document.getElementById('m').innerHTML='Error: '+e.message;}
+setTimeout(function(){location.replace('/my-plan/');},1000);
+</script></body></html>

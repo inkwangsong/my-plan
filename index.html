@@ -873,7 +873,7 @@ var blob=new Blob([json],{type:'application/json;charset=utf-8'});
 var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='schedule-data-'+fmtDLocal(new Date())+'.json';
 document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 showMsg('💾 Data exported as JSON');}
-var _ghSha=null,_ghSyncing=false;
+var _ghSha=null,_ghLastHash=null,_ghSyncing=false;
 function getGHCfg(){try{var s=localStorage.getItem('ghCfg');return s?JSON.parse(s):null;}catch(e){return null;}}
 function isGHReady(){var c=getGHCfg();return c&&c.token&&c.owner&&c.repo&&c.path;}
 function openGHSettings(){var c=getGHCfg()||{};document.getElementById('ghToken').value=c.token||'';document.getElementById('ghOwner').value=c.owner||'';document.getElementById('ghRepo').value=c.repo||'';document.getElementById('ghPath').value=c.path||'index.html';updateGHStatus();document.getElementById('ghM').classList.add('on');}
@@ -910,10 +910,13 @@ finally{_ghSyncing=false;btn.textContent=origTxt;btn.disabled=false;btn.style.op
 
 async function ghPull(){
 var cfg=getGHCfg();if(!cfg||!cfg.token)return false;
-try{var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
+// Use raw URL to avoid CORS preflight issues
+try{var rawUrl='https://raw.githubusercontent.com/'+cfg.owner+'/'+cfg.repo+'/main/'+cfg.path+'?_t='+Date.now();
+var r=await fetch(rawUrl);
 if(!r.ok)return false;
-var d=await r.json();_ghSha=d.sha;
-var raw=decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));
+var raw=await r.text();
+// Also get SHA via API for push operations (with no-cors workaround)
+try{var rSha=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(rSha.ok){var dSha=await rSha.json();_ghSha=dSha.sha;}}catch(e2){}
 var m=raw.match(/<meta name="app-data" content="([^"]+)">/)||raw.match(/<!--APP_DATA:([\w+\/=]+)-->/);
 if(m){try{var json=decodeURIComponent(escape(atob(m[1])));
 var data=JSON.parse(json);
@@ -943,11 +946,13 @@ function startPoll(){if(_pollTimer)clearInterval(_pollTimer);if(!isGHReady())ret
 _pollTimer=setInterval(_pollCheck,30000);}
 async function _pollCheck(){if(_ghSyncing||_syncDirty||!isGHReady()||!_syncReady)return;
 try{var cfg=getGHCfg();
-var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
-if(!r.ok)return;var d=await r.json();
-if(d.sha!==_ghSha){
-// Remote changed — pull new data
-var raw=decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));
+var rawUrl='https://raw.githubusercontent.com/'+cfg.owner+'/'+cfg.repo+'/main/'+cfg.path+'?_t='+Date.now();
+var r=await fetch(rawUrl);
+if(!r.ok)return;var raw=await r.text();
+// Check if content changed (compare with cached)
+var newHash=raw.length+'_'+raw.substring(0,50);
+if(newHash===_ghLastHash)return;_ghLastHash=newHash;
+{
 try{var data=JSON.parse(raw);
 if(data.pm)PM=data.pm;if(data.evs)evs=data.evs;if(data.po)PO=data.po;
 if(data.todos)todos=data.todos;if(data.memos)todoMemos=data.memos;

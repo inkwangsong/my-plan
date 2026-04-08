@@ -863,7 +863,7 @@ const a=document.createElement('a');a.href=dataURI;a.download=`schedule-${fmtDLo
 document.body.appendChild(a);a.click();document.body.removeChild(a);}
 
 function doWiki(){try{let o='# Project Schedule\n\n';Object.entries(PM).forEach(([k,m])=>{const ev=evs.filter(e=>e.p===k).sort((a,b)=>a.start.localeCompare(b.start));if(!ev.length)return;o+=`### ${esc(m.label)}\n`;ev.forEach(e=>{o+=`- ${e.milestone?'⭐ ':''}${pIcSp(e.phase)}${esc(e.phase)}: ${e.start}${e.start!==e.end?' ~ '+e.end:''} (${bdc(e.start,e.end)}BD) ${({completed:'✅','in-progress':'🔄',upcoming:'⏳'})[e.status]||''}\n`;});o+='\n';});o+=`---\nUpdated: ${new Date().toLocaleString('en-US')}\n`;document.getElementById('expO').textContent=o;document.getElementById('expM').classList.add('on');}catch(e){console.error(e);}}
-function _serializeData(){return JSON.stringify({pm:PM,evs:evs,po:PO,todos:todos,memos:todoMemos,ghCfg:getGHCfg()});}
+function _serializeData(){return JSON.stringify({pm:PM,evs:evs,po:PO,todos:todos,memos:todoMemos});/*token excluded*/}
 
 
 

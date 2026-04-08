@@ -1444,6 +1444,10 @@ return h;}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded',async()=>{
+
+// Auto-migrate: index.html path → data.json
+try{var _cfg=JSON.parse(localStorage.getItem('ghCfg')||'null');
+if(_cfg&&_cfg.path&&_cfg.path.match(/\.html?$/i)){_cfg.path='data.json';localStorage.setItem('ghCfg',JSON.stringify(_cfg));console.log('[migrate] path updated to data.json');}}catch(_e){}
 loadData();loadTodos();cFS=new Set(Object.keys(PM));
 document.getElementById('tDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 if(lsGet('dk','false')==='true'){document.body.classList.add('dk');document.getElementById('dkBtn').textContent='☀️';}

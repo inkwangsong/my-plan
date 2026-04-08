@@ -444,7 +444,7 @@ async function _autoSync(){if(!_syncDirty||_ghSyncing||!_syncReady)return;
 _updateSyncIndicator('syncing');_ghSyncing=true;
 try{var cfg=getGHCfg();if(!cfg||!cfg.token){_updateSyncIndicator('error');return;}
 // Always fetch fresh SHA before push
-try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json','If-None-Match':'','Cache-Control':'no-cache'}});
+try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
 if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}else if(r0.status===404){_ghSha=null;}}catch(e){}
 var content=_serializeData();var b64=btoa(unescape(encodeURIComponent(content)));
 var body={message:'Auto-save '+new Date().toLocaleString(),content:b64};if(_ghSha)body.sha=_ghSha;
@@ -883,7 +883,7 @@ function updateGHBtn(){var dot=document.getElementById('ghDot');var label=docume
 function updateGHStatus(){var el=document.getElementById('ghStatus');if(!el)return;if(isGHReady()){el.textContent='✅ Connected — '+getGHCfg().owner+'/'+getGHCfg().repo;el.style.background='rgba(22,163,74,.1)';el.style.color='#16a34a';}else{el.textContent='⚪ Not configured';el.style.background='var(--bg2)';el.style.color='var(--sub)';}}
 async function ghTestConnection(){var cfg=getGHCfg();if(!cfg||!cfg.token){showMsg('⚠️ Enter settings first');return;}
 updateGHStatus();var el=document.getElementById('ghStatus');el.textContent='🔄 Testing...';el.style.background='rgba(99,102,241,.1)';el.style.color='var(--pri)';
-try{var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json','If-None-Match':'','Cache-Control':'no-cache'}});
+try{var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
 if(r.ok){var d=await r.json();_ghSha=d.sha;el.textContent='✅ Connected! File found ('+Math.round(d.size/1024)+'KB)';el.style.background='rgba(22,163,74,.1)';el.style.color='#16a34a';}
 else if(r.status===404){el.textContent='📄 Repo accessible, file not found (will be created on first sync)';el.style.background='rgba(245,158,11,.1)';el.style.color='#f59e0b';_ghSha=null;}
 else{var err=await r.json().catch(function(){return{};});el.textContent='❌ Error '+r.status+': '+(err.message||'Check settings');el.style.background='rgba(239,68,68,.1)';el.style.color='#ef4444';}}
@@ -897,7 +897,7 @@ var btn=document.getElementById('ghSaveBtn');var origTxt=btn.textContent;
 btn.textContent='⏳ Saving...';btn.disabled=true;btn.style.opacity='.6';
 try{
 // Always fetch fresh sha
-try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json','If-None-Match':'','Cache-Control':'no-cache'}});if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}else if(r0.status===404){_ghSha=null;}}catch(e){}
+try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}else if(r0.status===404){_ghSha=null;}}catch(e){}
 var content=_serializeData();
 var b64=btoa(unescape(encodeURIComponent(content)));
 var body={message:'📋 Schedule update — '+new Date().toLocaleString(),content:b64};
@@ -910,7 +910,7 @@ finally{_ghSyncing=false;btn.textContent=origTxt;btn.disabled=false;btn.style.op
 
 async function ghPull(){
 var cfg=getGHCfg();if(!cfg||!cfg.token)return false;
-try{var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json','If-None-Match':'','Cache-Control':'no-cache'}});
+try{var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
 if(!r.ok)return false;
 var d=await r.json();_ghSha=d.sha;
 var raw=decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));
@@ -943,7 +943,7 @@ function startPoll(){if(_pollTimer)clearInterval(_pollTimer);if(!isGHReady())ret
 _pollTimer=setInterval(_pollCheck,30000);}
 async function _pollCheck(){if(_ghSyncing||_syncDirty||!isGHReady()||!_syncReady)return;
 try{var cfg=getGHCfg();
-var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json','If-None-Match':'','Cache-Control':'no-cache'}});
+var r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
 if(!r.ok)return;var d=await r.json();
 if(d.sha!==_ghSha){
 // Remote changed — pull new data

@@ -897,7 +897,7 @@ var btn=document.getElementById('ghSaveBtn');var origTxt=btn.textContent;
 btn.textContent='⏳ Saving...';btn.disabled=true;btn.style.opacity='.6';
 try{
 // Always fetch fresh sha
-try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}else if(r0.status===404){_ghSha=null;}}catch(e){}
+try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path+'?_='+Date.now(),{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}else if(r0.status===404){_ghSha=null;}}catch(e){}
 var content=_serializeData();
 var b64=btoa(unescape(encodeURIComponent(content)));
 var body={message:'📋 Schedule update — '+new Date().toLocaleString(),content:b64};
@@ -916,7 +916,7 @@ var r=await fetch(rawUrl);
 if(!r.ok)return false;
 var raw=await r.text();
 // Also get SHA via API for push operations (with no-cors workaround)
-try{var rSha=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path,{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(rSha.ok){var dSha=await rSha.json();_ghSha=dSha.sha;}}catch(e2){}
+try{var rSha=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path+'?_='+Date.now(),{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});if(rSha.ok){var dSha=await rSha.json();_ghSha=dSha.sha;}}catch(e2){}
 var m=raw.match(/<meta name="app-data" content="([^"]+)">/)||raw.match(/<!--APP_DATA:([\w+\/=]+)-->/);
 if(m){try{var json=decodeURIComponent(escape(atob(m[1])));
 var data=JSON.parse(json);

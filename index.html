@@ -439,7 +439,7 @@ function saveData(){try{localStorage.setItem('pm',JSON.stringify(PM));localStora
 
 // Auto-sync debounce: wait 3s after last change, then push to GitHub
 var _syncTimer=null,_syncDirty=false,_syncReady=false;
-function _queueSync(){if(!isGHReady()||!_syncReady)return;_syncDirty=true;if(_syncTimer)clearTimeout(_syncTimer);_syncTimer=setTimeout(_autoSync,3000);_updateSyncIndicator('pending');}
+function _queueSync(){if(!isGHReady()||!_syncReady)return;var _cfg=getGHCfg();if(_cfg&&_cfg.path&&_cfg.path.match(/\.html?$/i))return;/*no sync to HTML*/_syncDirty=true;if(_syncTimer)clearTimeout(_syncTimer);_syncTimer=setTimeout(_autoSync,3000);_updateSyncIndicator('pending');}
 async function _autoSync(){if(!_syncDirty||_ghSyncing||!_syncReady)return;
 _updateSyncIndicator('syncing');_ghSyncing=true;
 try{var cfg=getGHCfg();if(!cfg||!cfg.token){_updateSyncIndicator('error');return;}
@@ -892,6 +892,7 @@ catch(e){el.textContent='❌ Network error: '+e.message;el.style.background='rgb
 
 async function ghPush(){
 if(_ghSyncing)return;
+var cfg2=getGHCfg();if(cfg2&&cfg2.path&&cfg2.path.match(/\.html?$/i)){showMsg('⚠️ 동기화 경로가 .html 입니다. GitHub Sync 설정에서 data.json으로 변경해주세요.');openGHSettings();return;}
 var cfg=getGHCfg();if(!cfg||!cfg.token){showMsg('⚠️ Configure GitHub first');openGHSettings();return;}
 _ghSyncing=true;
 var btn=document.getElementById('ghSaveBtn');var origTxt=btn.textContent;
@@ -926,7 +927,7 @@ if(data.memos){todoMemos=data.memos;try{localStorage.setItem('todoMemos',JSON.st
 if(data.ghCfg&&data.ghCfg.token){try{localStorage.setItem('ghCfg',JSON.stringify(data.ghCfg));}catch(e){}}
 return true;}catch(e){console.error('ghPull parse error:',e);}}
 return false;
-// Fallback: try plain JSON (for data.json)
+// Fallback: try plain JSON (data.json format)
 try{var pj=JSON.parse(raw);if(pj&&(pj.pm||pj.todos)){
 if(pj.pm&&Object.keys(pj.pm).length){PM=pj.pm;try{localStorage.setItem('pm',JSON.stringify(PM));}catch(ex){}}
 if(pj.evs&&pj.evs.length){evs=pj.evs;try{localStorage.setItem('evs',JSON.stringify(evs));}catch(ex){}}

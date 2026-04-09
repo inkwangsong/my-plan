@@ -956,14 +956,14 @@ var rawUrl2='https://raw.githubusercontent.com/'+cfg.owner+'/'+cfg.repo+'/main/'
 var r=await fetch(rawUrl2);
 if(!r.ok)return;var raw=await r.text();
 var newHash=raw.length+'_'+raw.substring(0,50);
-if(newHash===_ghLastHash)return;_ghLastHash=newHash;
-{
+if(newHash===_ghLastHash)return;
+_ghLastHash=newHash;
 try{var data=JSON.parse(raw);
 if(data.pm)PM=data.pm;if(data.evs)evs=data.evs;if(data.po)PO=data.po;
 if(data.todos)todos=data.todos;if(data.memos)todoMemos=data.memos;
-_ghSha=d.sha;cFS=new Set(Object.keys(PM));rAll();
-_updateSyncIndicator('done');showMsg('🔄 다른 기기의 변경사항 동기화 완료');
-}catch(e){}}}catch(e){}}
+cFS=new Set(Object.keys(PM));rAll();
+_updateSyncIndicator('done');showMsg('🔄 새 데이터 동기화 완료! 새로고침 불필요 ✅');
+}catch(e){}}catch(e){}}
 function closeM(id){document.getElementById(id).classList.remove('on');}
 
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.mbg.on').forEach(function(m){m.classList.remove('on');});document.querySelectorAll('.td-picker').forEach(function(p){p.style.display='none';});}});

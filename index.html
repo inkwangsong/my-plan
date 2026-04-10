@@ -448,7 +448,7 @@ if(changed)saveData();}
 
 // Auto-sync debounce: wait 3s after last change, then push to GitHub
 var _syncTimer=null,_syncDirty=false,_syncReady=false;
-function _queueSync(){if(!isGHReady()||!_syncReady)return;var _qc=getGHCfg();if(_qc&&_qc.path&&/\.html?$/i.test(_qc.path))return;_syncDirty=true;if(_syncTimer)clearTimeout(_syncTimer);_syncTimer=setTimeout(_autoSync,3000);_updateSyncIndicator('pending');}
+function _queueSync(){return;/*auto-sync disabled: use manual ☁️ Sync button*/_syncDirty=true;if(_syncTimer)clearTimeout(_syncTimer);_syncTimer=setTimeout(_autoSync,3000);_updateSyncIndicator('pending');}
 async function _autoSync(){if(!_syncDirty||_ghSyncing||!_syncReady)return;
 _updateSyncIndicator('syncing');_ghSyncing=true;
 try{var cfg=getGHCfg();if(!cfg||!cfg.token){_updateSyncIndicator('error');return;}

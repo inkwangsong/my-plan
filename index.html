@@ -452,8 +452,23 @@ function _queueSync(){if(!isGHReady()||!_syncReady)return;var _qc=getGHCfg();if(
 async function _autoSync(){if(!_syncDirty||_ghSyncing||!_syncReady)return;
 _updateSyncIndicator('syncing');_ghSyncing=true;
 try{var cfg=getGHCfg();if(!cfg||!cfg.token){_updateSyncIndicator('error');return;}
-// Fetch fresh SHA
-try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path+'?t='+Date.now(),{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github.v3+json'}});
+// Pull-then-merge: 외부 변경사항 먼저 당기고 로컬 변경 합산 후 push
+try{
+var rawUrl='https://raw.githubusercontent.com/'+cfg.owner+'/'+cfg.repo+'/main/'+cfg.path+'?_t='+Date.now();
+var rPull=await fetch(rawUrl);
+if(rPull.ok){
+var remoteRaw=await rPull.text();
+try{var remoteData=JSON.parse(remoteRaw);
+// 원격에 더 많은 todo가 있으면 머지 (외부 추가 보존)
+if(remoteData.todos&&remoteData.todos.length>todos.length){
+var remoteIds=new Set(remoteData.todos.map(function(t){return t.id;}));
+var localOnly=todos.filter(function(t){return !remoteIds.has(t.id);});
+todos=remoteData.todos.concat(localOnly);
+try{localStorage.setItem('todos',JSON.stringify(todos));}catch(ex){}
+}
+}catch(ex2){}}}catch(ePull){}
+// SHA 가져오기
+try{var r0=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+'/contents/'+cfg.path+'?_='+Date.now(),{headers:{'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'}});
 if(r0.ok){var d0=await r0.json();_ghSha=d0.sha;}else if(r0.status===404){_ghSha=null;}}catch(e){console.warn('SHA fetch failed:',e);}
 var content=_serializeData();var b64=btoa(unescape(encodeURIComponent(content)));
 var body={message:'sync '+new Date().toISOString().slice(0,19),content:b64};if(_ghSha)body.sha=_ghSha;

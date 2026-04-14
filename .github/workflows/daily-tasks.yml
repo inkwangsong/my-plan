@@ -1,0 +1,29 @@
+name: Daily Task Registration
+
+on:
+  schedule:
+    # 매일 18:30 KST = 09:30 UTC (월~금)
+    - cron: "30 9 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'YYYY-MM-DD (비어있으면 다음 영업일)'
+        required: false
+        default: ''
+
+jobs:
+  register-tasks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run daily task registration
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          TARGET_DATE: ${{ github.event.inputs.target_date }}
+        run: python scripts/daily_tasks.py

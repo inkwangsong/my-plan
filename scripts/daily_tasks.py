@@ -101,7 +101,7 @@ for ev in active_ev:
     short = m.get("short", ev["p"])
     phase = ev.get("phase","")
     add(f"ev-sched-{ev['id']}-{TARGET.replace('-','')}",
-        f"{short} — {phase} 체크",
+        f"[일정 F/up] {short}: {phase} 진행 상황 확인",
         project=ev["p"],
         weight="S")
 

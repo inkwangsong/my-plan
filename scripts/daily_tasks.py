@@ -101,7 +101,7 @@ for ev in active_ev:
     short = m.get("short", ev["p"])
     phase = ev.get("phase","")
     add(f"ev-sched-{ev['id']}-{TARGET.replace('-','')}",
-        f"[일정 F/up] {short}: {phase} 진행 상황 확인",
+        f"{short} — {phase} 체크",
         project=ev["p"],
         weight="S")
 
@@ -130,3 +130,4 @@ print(f"✅ {len(new_tasks)}건 등록 완료: {d['commit']['sha'][:8]}")
 print("   태스크 목록:")
 for t in new_tasks:
     print(f"   - {t['text'][:70]}")
+
